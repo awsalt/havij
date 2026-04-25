@@ -8,7 +8,6 @@ import re
 import socket
 from urllib.parse import urlparse
 
-# Pillow লাইব্রেরি থেকে প্রয়োজনীয় মডিউল ইম্পোর্ট করা
 try:
     from PIL import Image, ImageTk
 except ImportError:
@@ -19,7 +18,7 @@ class HavijProGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Havij Pro 15.17 - Advanced SQL Injection Tool")
-        self.root.geometry("706x696")
+        self.root.geometry("706x720")
         self.root.configure(bg="#f0f0f0")
         
         style = ttk.Style()
@@ -27,49 +26,38 @@ class HavijProGUI:
         style.configure("Treeview", rowheight=20, font=("Tahoma", 9))
         style.configure("Treeview.Heading", font=("Tahoma", 9, "bold"), background="#e0e0e0")
 
-        # ================= LOAD & RESIZE ICONS =================
         self.icons = {}
         base_dir = os.path.dirname(os.path.abspath(__file__))
         self.packet_dir = os.path.join(base_dir, "packet")
         
-        # আউটপুট সাইজ ৩০x৩০ নির্ধারণ করা
         ICON_SIZE = (30, 30)
+        LOGO_SIZE = (150, 150)
         
-        # ফাংশনটি যেকোনো সাইজের ইমেজ লোড করে ৩০x৩০ করে দিবে
-        def get_and_force_resize_icon(name, filename):
+        def get_and_force_resize_icon(name, filename, target_size=ICON_SIZE):
             path = os.path.join(self.packet_dir, filename)
             if os.path.exists(path):
                 try:
-                    # Pillow দিয়ে ইমেজ ওপেন করা
                     pil_img = Image.open(path)
-                    
-                    # জোরপূর্বক ৩০x৩০ সাইজে রিসাইজ করা (Resampling ব্যবহার করে মান ভালো রাখার জন্য)
-                    resized_pil_img = pil_img.resize(ICON_SIZE, Image.Resampling.LANCZOS)
-                    
-                    # Pillow ইমেজকে Tkinter-এর PhotoImage-এ রূপান্তর করা
+                    resized_pil_img = pil_img.resize(target_size, Image.Resampling.LANCZOS)
                     tk_img = ImageTk.PhotoImage(resized_pil_img)
-                    
-                    # Garbage Collection থেকে বাঁচাতে স্টোর করা
                     self.icons[name] = tk_img
                     return tk_img
                 except Exception as e:
                     print(f"Error loading/resizing {filename}: {e}")
             return None
 
-        # Load specific icons (play and stop are dynamic)
         self.icon_play = get_and_force_resize_icon("play", "play.png")
         self.icon_stop = get_and_force_resize_icon("stop", "stop.png")
         
-        # ================= TOP FRAME =================
+        self.about_logo = get_and_force_resize_icon("logo", "falcon.png", target_size=LOGO_SIZE)
+        
         top_frame = tk.Frame(root, bg="#f0f0f0", pady=10, padx=10)
         top_frame.pack(fill=tk.X)
         
-        # URL Row
         tk.Label(top_frame, text="Target:", bg="#f0f0f0", font=("Tahoma", 9, "bold")).grid(row=0, column=0, sticky="w")
         self.url_entry = tk.Entry(top_frame, font=("Tahoma", 9), width=60, relief="solid", bd=1)
         self.url_entry.grid(row=0, column=1, padx=10, pady=5)
         
-        # Dynamic Analyze/Stop Button
         analyze_kwargs = {
             "text": "Analyze", "command": self.analyze_url,
             "bg": "#f0f0f0", "relief": "flat", "cursor": "hand2", "font": ("Tahoma", 9, "bold")
@@ -81,7 +69,6 @@ class HavijProGUI:
         self.analyze_btn = tk.Button(top_frame, **analyze_kwargs)
         self.analyze_btn.grid(row=0, column=2, padx=10)
 
-        # ================= TOOLBAR =================
         toolbar_frame = tk.Frame(root, bg="#f0f0f0", pady=5, padx=10)
         toolbar_frame.pack(fill=tk.X)
 
@@ -100,7 +87,7 @@ class HavijProGUI:
             }
             if img:
                 btn_kwargs["image"] = img
-                btn_kwargs["compound"] = tk.TOP # আইকন উপরে, টেক্সট নিচে
+                btn_kwargs["compound"] = tk.TOP
                 
             btn = tk.Button(toolbar_frame, **btn_kwargs)
             btn.pack(side=tk.LEFT, padx=5)
@@ -108,18 +95,20 @@ class HavijProGUI:
         self.batch_var = tk.BooleanVar(value=True)
         tk.Checkbutton(toolbar_frame, text="Auto Mode (Batch)", variable=self.batch_var, bg="#f0f0f0", font=("Tahoma", 9)).pack(side=tk.RIGHT)
 
-        # ================= MAIN CONTAINER =================
         self.main_container = tk.Frame(root, bg="#f0f0f0")
         self.main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
-        # ---------------- ABOUT FRAME ----------------
         self.about_frame = tk.Frame(self.main_container, bg="white", relief="solid", bd=1)
         
-        # About Content
         tk.Label(self.about_frame, text="Havij Pro 15.17 - Advanced SQL Injection Tool", font=("Tahoma", 12, "bold"), bg="white").pack(pady=(20, 10))
         
+        if self.about_logo:
+            tk.Label(self.about_frame, image=self.about_logo, bg="white").pack(pady=(0, 10))
+        else:
+            tk.Label(self.about_frame, text="[falcon.png missing in packet folder]", fg="red", bg="white").pack(pady=(0, 10))
+        
         info_frame = tk.Frame(self.about_frame, bg="white")
-        info_frame.pack(pady=10)
+        info_frame.pack(pady=5)
         
         tk.Label(info_frame, text="Version 15.17 Pro", font=("Tahoma", 10), bg="white").grid(row=0, column=0, sticky="w")
         tk.Label(info_frame, text="Copyright © 2026", font=("Tahoma", 10), bg="white").grid(row=1, column=0, sticky="w")
@@ -127,16 +116,13 @@ class HavijProGUI:
         tk.Label(self.about_frame, text="http://arenawebsecurity.net", font=("Tahoma", 10), fg="blue", bg="white", cursor="hand2").pack(pady=(10, 0))
         tk.Label(self.about_frame, text="qrteam@arenawebsecurity.net", font=("Tahoma", 10), fg="blue", bg="white", cursor="hand2").pack()
         
-        tk.Label(self.about_frame, text="Supported Data Bases:", font=("Tahoma", 9, "bold"), bg="white").pack(pady=(20, 5))
-        db_list = "MsSQL with error\nMsSQL no error\nMsSQL Blind\nMsAccess\nMsAccess Blind\nMySQL\nOracle"
-        tk.Label(self.about_frame, text=db_list, font=("Tahoma", 9), bg="white", justify=tk.LEFT).pack()
+        tk.Label(self.about_frame, text="Credit:", font=("Tahoma", 9, "bold"), bg="white").pack(pady=(20, 5))
+        tk.Label(self.about_frame, text="fumioryoto", font=("Tahoma", 9), bg="white").pack()
 
-        # ---------------- DATA FRAME (Paned Window) ----------------
         self.data_frame = tk.Frame(self.main_container, bg="#f0f0f0")
         self.paned_window = ttk.PanedWindow(self.data_frame, orient=tk.HORIZONTAL)
         self.paned_window.pack(fill=tk.BOTH, expand=True)
 
-        # --- LEFT PANE (Treeview) ---
         left_frame = tk.Frame(self.paned_window, bg="white", relief="solid", bd=1)
         self.paned_window.add(left_frame, weight=1)
         
@@ -150,7 +136,6 @@ class HavijProGUI:
         tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
         self.tree.configure(yscrollcommand=tree_scroll.set)
 
-        # --- RIGHT PANE (Data Grid) ---
         right_frame = tk.Frame(self.paned_window, bg="white", relief="solid", bd=1)
         self.paned_window.add(right_frame, weight=2)
         
@@ -163,10 +148,8 @@ class HavijProGUI:
         grid_scroll.pack(side=tk.RIGHT, fill=tk.Y)
         self.data_grid.configure(yscrollcommand=grid_scroll.set)
 
-        # Initialize Default View (About)
         self.show_about_view()
 
-        # --- CONTEXT MENUS ---
         self.grid_menu = tk.Menu(self.root, tearoff=0, font=("Tahoma", 9))
         self.grid_menu.add_command(label="Copy Cell", command=self.copy_grid_cell)
         self.grid_menu.add_command(label="Copy Row", command=self.copy_grid_row)
@@ -177,18 +160,16 @@ class HavijProGUI:
         self.log_menu.add_separator()
         self.log_menu.add_command(label="Clear Log", command=self.clear_log)
 
-        # ================= BOTTOM FRAME (Log) =================
         bottom_frame = tk.Frame(root, bg="#f0f0f0", padx=10, pady=5)
         bottom_frame.pack(fill=tk.X, side=tk.BOTTOM)
 
         status_frame = tk.Frame(bottom_frame, bg="#f0f0f0")
         status_frame.pack(fill=tk.X)
         
-        # --- Loading Spinner UI ---
         self.spinner_lbl = tk.Label(status_frame, text="", fg="red", bg="#f0f0f0", font=("Tahoma", 11, "bold"))
         self.spinner_lbl.pack(side=tk.LEFT)
         
-        self.status_lbl = tk.Label(status_frame, text="Status: I'm IDLE", fg="blue", bg="#f0f0f0", font=("Tahoma", 9, "bold"))
+        self.status_lbl = tk.Label(status_frame, text="Status: I'm IDLE", fg="blue", bg="#f0f0f0", font=("Tahoma", 9))
         self.status_lbl.pack(side=tk.LEFT, padx=5)
 
         clear_btn = tk.Button(status_frame, text="Clear Log", command=self.clear_log, fg="blue", bg="#f0f0f0", relief="flat", cursor="hand2", font=("Tahoma", 9))
@@ -203,7 +184,6 @@ class HavijProGUI:
         self.log_area.tag_config('red', foreground='#FF0000') 
         self.log_area.tag_config('black', foreground='#000000')
 
-        # State Variables
         self.current_process = None
         self.current_mode = None
         self.active_db_node = None
@@ -216,14 +196,12 @@ class HavijProGUI:
         
         self.waf_detected = False
 
-        # Spinner Variables
         self.spinner_chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
         self.spinner_idx = 0
         self.is_running = False
 
         self.log_area.insert(tk.END, "Havij Pro 15.17 ready!\n", 'green')
 
-    # --- View Switchers ---
     def show_about_view(self):
         self.data_frame.pack_forget()
         self.about_frame.pack(fill=tk.BOTH, expand=True)
@@ -232,7 +210,6 @@ class HavijProGUI:
         self.about_frame.pack_forget()
         self.data_frame.pack(fill=tk.BOTH, expand=True)
 
-    # --- UI Toggle Logic ---
     def toggle_action_btn(self, is_running):
         if is_running:
             self.analyze_btn.config(text="Stop", command=self.stop_process, bg="#ffb3b3", fg="black")
@@ -530,7 +507,22 @@ class HavijProGUI:
     def analyze_url(self):
         self.is_analyze_mode = True 
         self.show_about_view() 
+        
         self.tree.delete(*self.tree.get_children()) 
+        
+        self.data_grid.delete(*self.data_grid.get_children())
+        self.data_grid["columns"] = ()
+        
+        self.dump_cols = []
+        self.selected_cols_order = []
+        self.sqlmap_col_order = None
+        self.active_db_node = None
+        self.active_table_node = None
+        self.waf_detected = False
+        self.clicked_cell_value = ""
+        
+        self.log_area.insert(tk.END, "\nStarting new analysis...\n", 'green')
+        
         self.run_command(["--dbs"], mode="dbs")
 
     def get_dbs(self):
